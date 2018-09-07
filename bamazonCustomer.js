@@ -23,7 +23,7 @@ connection.connect(function (err) {
   //queryAllProducts();
 });
 
-//Prompt the user on how they want to search for products
+//Prompt the user for the product id and the amount
 
 function start(data) {
   inquirer
@@ -39,64 +39,73 @@ function start(data) {
         name: "units",
         message: "How many would you like?"
       }
-    
-      
+
+
 
     ])
-.then(function(answer) {
+    .then(function (answer) {
 
-  var quantity;
-  for (var i =0; i < data.length; i++) {
-if (data[i].item_id==answer.id) {
-  quantity = data[i].stock_quantity;
-}
+      var quantity;
+      for (var i = 0; i < data.length; i++) {
+        if (data[i].item_id == answer.id) {
+          quantity = data[i].stock_quantity;
+        }
 
-  }
+      }
+//If they enter a number higher than in stock, show a message
+      if (answer.units > quantity) {
+        console.log("Insufficient quantity. Try again.");
 
-if (answer.units > quantity) {
-  console.log("Insufficient quantity. Try again.");
+        return start(data);
+      }
 
-  return start(data);
-}
-connection.query(
-  "UPDATE products SET stock_quantity = stock_quantity - ? WHERE item_id = ?",
-  [
-{
-  stock_quantity: answer.units
-},
+      
+        console.log("Updating stock quantity.")
+        var query = connection.query(
+          "UPDATE products  SET ? WHERE ? ",
 
-{
-  item_id: answer.id
-}
+          [
+            {
+              stock_quantity: answer.units - quantity
+            },
 
-  ]
-)
-}
+            {
+              item_id: answer.id
+            }
 
-)
-}  
+          ],
+          function (error) {
 
+            if (error) throw err;
+            console.log("Thank you! We've got your order.");
+          }
 
+        )
+      }
+
+  
+
+    )}
 
 
 function queryAllIds() {
-        connection.query("SELECT * FROM products", function (err, res) {
-          for (var i = 0; i < res.length; i++) {
-            console.log(res[i].item_id + " | " + res[i].product_name + " | " + res[i].department_name + " | " + res[i].price + " | " + res[i].stock_quantity);
-          }
-          console.log("-----------------------------------");
-          start (res)
-        });
-      }
-  
-  function queryAllProducts() {
-        var query = connection.query("SELECT * FROM products WHERE kind=?", ["product_name"], function (err, res) {
-          console.log(res);
-          //    for (var i = 0; i < res.length; i++) {
-          //     console.log(res[i].item_id + " | " + res[i].product_name + " | " + res[i].department_name + " | " + res[i].price + " | " + res[i].stock_quantity);
-          //   }
-        });
+  connection.query("SELECT * FROM products", function (err, res) {
+    for (var i = 0; i < res.length; i++) {
+      console.log(res[i].item_id + " | " + res[i].product_name + " | " + res[i].department_name + " | " + res[i].price + " | " + res[i].stock_quantity);
+    }
+    console.log("-----------------------------------");
+    start(res)
+  });
+}
 
-        //logs the actual query being run
-        console.log(query.sql);
-      }
+function queryAllProducts() {
+  var query = connection.query("SELECT * FROM products WHERE kind=?", ["product_name"], function (err, res) {
+    console.log(res);
+    //    for (var i = 0; i < res.length; i++) {
+    //     console.log(res[i].item_id + " | " + res[i].product_name + " | " + res[i].department_name + " | " + res[i].price + " | " + res[i].stock_quantity);
+    //   }
+  });
+
+  //logs the actual query being run
+  console.log(query.sql);
+}
